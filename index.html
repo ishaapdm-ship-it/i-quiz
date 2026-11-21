@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ദർസ് ഡെയിലി ക്വിസ് (Dars Daily Quiz)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+        }
+        body {
+            font-family: 'Poppins', 'Manjari', sans-serif;
+            background-color: #f1f5f9;
+            color: #334155;
+            user-select: none;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #059669, #0d9488);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .card-custom {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            background: #ffffff;
+        }
+        .btn-custom-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 10px 20px;
+        }
+        .btn-custom-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), #047857);
+            color: white;
+        }
+        .timer-badge {
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: #ef4444;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+        .timer-warning {
+            background: #b91c1c;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fff;
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #ecfdf5;
+        }
+        .option-btn.selected {
+            border-color: var(--primary-dark);
+            background: #d1fae5;
+            font-weight: 600;
+        }
+        .topper-card {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-left: 5px solid #f59e0b;
+        }
+        .hide { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark py-3">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#">
+                <i class="bi bi-journal-check fs-3"></i>
+                <span>ദർസ് ഡെയിലി ക്വിസ്</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <span id="syncStatusPill" class="badge bg-light text-dark">Syncing...</span>
+                <button id="logoutBtn" class="btn btn-outline-light btn-sm hide" onclick="logout()">Logout</button>
+                <button id="adminLoginBtn" class="btn btn-light btn-sm fw-bold" onclick="openAdminModal()">Admin</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <!-- 1. Student Login -->
+        <div id="loginSection" class="row justify-content-center py-3">
+            <div class="col-md-6 col-lg-5">
+                <div class="card card-custom p-4 text-center">
+                    <i class="bi bi-person-bounding-box text-success display-4 mb-2"></i>
+                    <h4 class="fw-bold mb-1">ക്വിസ് ലോഗിൻ</h4>
+                    <p class="text-muted small mb-3">നിങ്ങളുടെ Student ID നൽകുക (ഉദാ: ST001)</p>
+
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control text-uppercase" id="studentIdInput" placeholder="ST001">
+                        <label for="studentIdInput">Student ID</label>
+                    </div>
+
+                    <button id="startQuizBtn" class="btn btn-custom-primary w-100 py-2" onclick="handleStudentLogin()">
+                        പരീക്ഷ ആരംഭിക്കുക
+                    </button>
+
+                    <div id="loginAlert" class="alert alert-danger mt-3 p-2 small hide"></div>
+                </div>
+
+                <!-- Category Toppers -->
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-2 text-center"><i class="bi bi-trophy-fill text-warning me-1"></i> ഇന്നത്തെ ടോപ്പർമാർ</h6>
+                    <div id="toppersList" class="row g-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Quiz Screen -->
+        <div id="quizSection" class="row justify-content-center hide">
+            <div class="col-md-8">
+                <div class="card card-custom p-3 mb-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold" id="qStudentName"></h6>
+                        <small class="text-muted" id="qStudentMeta"></small>
+                    </div>
+                    <span id="timerBadge" class="timer-badge">05:00</span>
+                </div>
+
+                <div id="cheatWarning" class="alert alert-warning py-2 text-center small fw-bold hide">
+                    ശ്രദ്ധിക്കുക: വീണ്ടും വിൻഡോ മാറിയാൽ ക്വിസ് ഓട്ടോ-സബ്മിറ്റ് ആകും!
+                </div>
+
+                <div class="card card-custom p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="badge bg-secondary" id="qCounter">ചോദ്യം 1 / 5</span>
+                        <span class="badge bg-success" id="qMarkBadge">മാർക്ക്: 2.5</span>
+                    </div>
+
+                    <h5 id="qText" class="fw-bold mb-4" style="line-height: 1.6;"></h5>
+                    <div id="qOptions"></div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-outline-secondary" id="prevBtn" onclick="prevQ()">മുന്നത്തെ ചോദ്യം</button>
+                        <button class="btn btn-custom-primary" id="nextBtn" onclick="nextQ()">അടുത്ത ചോദ്യം</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Submitted Screen -->
+        <div id="doneSection" class="row justify-content-center py-5 hide">
+            <div class="col-md-6 text-center">
+                <div class="card card-custom p-5">
+                    <i class="bi bi-check-circle-fill text-success display-1 mb-3"></i>
+                    <h3 class="fw-bold">പരീക്ഷ പൂർത്തിയായി!</h3>
+                    <p class="text-muted">നിങ്ങളുടെ ഉത്തരങ്ങൾ Google Sheet-ൽ സേവ് ചെയ്തിട്ടുണ്ട്.</p>
+                    <button class="btn btn-outline-primary mt-2" onclick="logout()">Home ലേക്ക് മടങ്ങുക</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Admin Panel -->
+        <div id="adminSection" class="hide">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+                <div>
+                    <h3 class="fw-bold mb-0">അഡ്മിൻ പാനൽ</h3>
+                    <small class="text-muted" id="adminSummaryText"></small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshFromCloud(true)">Refresh Sheet</button>
+                    <button class="btn btn-danger btn-sm" onclick="clearAllSubmissions()">Reset All</button>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-5">
+                    <div class="card card-custom p-3 h-100">
+                        <h6 class="fw-bold mb-3">പരീക്ഷാ ക്രമീകരണങ്ങൾ</h6>
+                        <div class="mb-2">
+                            <label class="small text-muted">സമയം (മിനിറ്റിൽ)</label>
+                            <input type="number" id="cfgTimer" class="form-control" value="5" min="1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="small text-muted">പരമാവധി മാർക്ക് (Max Marks)</label>
+                            <input type="number" id="cfgMaxMarks" class="form-control" value="25" min="1">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="cfgScaleMarks">
+                            <label class="form-check-label small" for="cfgScaleMarks">
+                                മാർക്ക് Max Marks-ലേക്ക് Scale ചെയ്യുക
+                            </label>
+                        </div>
+                        <button class="btn btn-success btn-sm w-100" onclick="saveSettingsToCloud()">Save Settings to Sheet</button>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card card-custom p-3 h-100">
+                        <h6 class="fw-bold mb-1">ചോദ്യങ്ങൾ ആഡ് ചെയ്യുക (Bulk Import)</h6>
+                        <small class="text-muted d-block mb-2">
+                            ചോദ്യത്തിനൊപ്പം <code>(3 Marks)</code> അല്ലെങ്കിൽ <code>[2.5]</code> നൽകാം.
+                        </small>
+                        <textarea id="bulkInput" class="form-control mb-2" rows="5" placeholder="1. ഖുർആനിലെ ആദ്യ സൂറത്ത് ഏത്? (3 Marks)&#10;A) അൽ ഫാതിഹ&#10;B) അൽ ബഖറ&#10;C) അൽ ഇഖ്ലാസ്&#10;D) അൽ ഫലഖ്&#10;Ans: A"></textarea>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button class="btn btn-primary btn-sm" onclick="importQuestionsToCloud()">Upload Questions to Sheet</button>
+                            <small class="text-muted" id="qCountSummary"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submissions Table -->
+            <div class="card card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">വിദ്യാർത്ഥികളുടെ ഫലങ്ങൾ</h5>
+                    <select id="catFilter" class="form-select form-select-sm w-auto" onchange="renderAdminTable()">
+                        <option value="ALL">All Categories</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Junior">Junior</option>
+                        <option value="Sub Junior">Sub Junior</option>
+                    </select>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>പേര്</th>
+                                <th>Category</th>
+                                <th>Batch</th>
+                                <th>മാർക്ക്</th>
+                                <th>സമയം</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal fade" id="adminModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content card-custom p-3">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">അഡ്മിൻ ലോഗിൻ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="admUser" class="form-control mb-2" placeholder="Username (admin)">
+                    <input type="password" id="admPass" class="form-control mb-3" placeholder="Password">
+                    <button class="btn btn-custom-primary w-100" onclick="adminLogin()">Login</button>
+                    <div id="admErr" class="alert alert-danger mt-2 p-2 small hide"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ⚠️ നിങ്ങളുടെ പുതിയ Google Apps Script Web App URL (/exec) താഴെ പേസ്റ്റ് ചെയ്യുക
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUekUT0DZGUOlgAyMVX3KtRBLCGm8yoqL_uGVGDeZ-2Nid5_4AdQbEpr7Y2Sv-lB664w/exec";
+
+        const students = [
+            { id: "ST001", name: "MUHAMMED RAFI", category: "Senior", team: "Fatih's Force", batch: "Batch A" },
+            { id: "ST002", name: "AHAMMED KABEER", category: "Senior", team: "Cordoba Knights", batch: "Batch A" },
+            { id: "ST003", name: "LUKHMAN.VK", category: "Senior", team: "Fatih's Force", batch: "Batch B" },
+            { id: "ST004", name: "MUHAMMED.K", category: "Senior", team: "Samarqand Avengers", batch: "Batch B" },
+            { id: "ST005", name: "MUHAMMED FASALURAHMAN.P", category: "Senior", team: "Baghdad Gild", batch: "Batch B" },
+            { id: "ST006", name: "MUHAMMED FADHAL.P", category: "Junior", team: "Baghdad Gild", batch: "Batch C" },
+            { id: "ST007", name: "MUHAMMED SHAMMAS.N", category: "Junior", team: "Baghdad Gild", batch: "Batch C" },
+            { id: "ST008", name: "MUHAMMED MIDLAJ.N", category: "Junior", team: "Cordoba Knights", batch: "Batch C" },
+            { id: "ST009", name: "MUHAMMED RAEES.TK", category: "Junior", team: "Samarqand Avengers", batch: "Batch C" },
+            { id: "ST010", name: "MUHAMMED RABEEH.MT", category: "Junior", team: "Samarqand Avengers", batch: "Batch D" },
+            { id: "ST011", name: "MUHAMMED THWAYYIB", category: "Junior", team: "Cordoba Knights", batch: "Batch D" },
+            { id: "ST012", name: "MUHAMMED SINAN.NC", category: "Junior", team: "Samarqand Avengers", batch: "Batch D" },
+            { id: "ST013", name: "MUHAMMED MUSHAB", category: "Junior", team: "Fatih's Force", batch: "Batch D" },
+            { id: "ST014", name: "MASHHOORUL HAQ", category: "Junior", team: "Fatih's Force", batch: "Batch D" },
+            { id: "ST015", name: "MUHAMMED RAHOOF.P", category: "Junior", team: "Cordoba Knights", batch: "Batch E" },
+            { id: "ST016", name: "MUHAMMED SHIHAL.T", category: "Sub Junior", team: "Baghdad Gild", batch: "Batch E" },
+            { id: "ST017", name: "MUHAMMED SAEED.VK", category: "Sub Junior", team: "Samarqand Avengers", batch: "Batch E" },
+            { id: "ST018", name: "MUHAMMED HADHI.VP", category: "Sub Junior", team: "Samarqand Avengers", batch: "Batch E" },
+            { id: "ST019", name: "MUHAMMED SINAN.E", category: "Sub Junior", team: "Fatih's Force", batch: "Batch E" },
+            { id: "ST020", name: "MUHAMMED MARZOOQ.VK", category: "Sub Junior", team: "Cordoba Knights", batch: "Batch F" },
+            { id: "ST021", name: "MUHAMMED AZHARUDHEEN.N", category: "Sub Junior", team: "Baghdad Gild", batch: "Batch F" },
+            { id: "ST022", name: "MUHAMMED RAZI", category: "Sub Junior", team: "Baghdad Gild", batch: "Batch F" },
+            { id: "ST023", name: "MUHAMMED MISBAH.P", category: "Sub Junior", team: "Cordoba Knights", batch: "Batch F" },
+            { id: "ST024", name: "MUHHAMMED SINAN.EK", category: "Sub Junior", team: "Cordoba Knights", batch: "Batch F" },
+            { id: "ST025", name: "MUHAMMED RAFEEH", category: "Sub Junior", team: "Baghdad Gild", batch: "Batch F" },
+            { id: "ST026", name: "MUHAMMED NIZAMUDHEEN", category: "Sub Junior", team: "Cordoba Knights", batch: "Batch F" },
+            { id: "ST027", name: "MUHAMMED FUWAD", category: "Sub Junior", team: "Fatih's Force", batch: "Batch G" },
+            { id: "ST028", name: "MUHAMMED KHIDASH", category: "Sub Junior", team: "Cordoba Knights", batch: "Batch G" }
+        ];
+
+        const fallbackQuestions = [
+            { id: 1, text: "ഇസ്ലാമിലെ ആദ്യത്തെ പള്ളി ഏതാണ്?", options: ["മസ്ജിദുൽ ഹറാം", "മസ്ജിദുന്നബവി", "മസ്ജിദുൽ ഖുബാ", "മസ്ജിദുൽ അഖ്സ"], answer: 2, marks: 5 }
+        ];
+
+        let state = {
+            questions: [...fallbackQuestions],
+            timerMinutes: 5,
+            maxMarks: 25,
+            scaleMarks: false,
+            submissions: []
+        };
+
+        let activeStudent = null;
+        let quizQuestions = [];
+        let answers = {};
+        let qIndex = 0;
+        let secondsLeft = 300;
+        let timerId = null;
+        let warnings = 1;
+
+        window.addEventListener("DOMContentLoaded", async () => {
+            await refreshFromCloud(false);
+        });
+
+        function hasValidScriptUrl() {
+            return SCRIPT_URL && SCRIPT_URL.startsWith("https://script.google.com/macros/s/") && !SCRIPT_URL.includes("PASTE_YOUR");
+        }
+
+        async function refreshFromCloud(showAlert = false) {
+            const pill = document.getElementById("syncStatusPill");
+            if (!hasValidScriptUrl()) {
+                pill.className = "badge bg-warning text-dark";
+                pill.innerText = "Script URL Missing";
+                renderToppers();
+                return;
+            }
+
+            pill.className = "badge bg-info text-dark";
+            pill.innerText = "Syncing...";
+
+            try {
+                const res = await fetch(`${SCRIPT_URL}?action=getBootstrapData&t=${Date.now()}`);
+                const data = await res.json();
+
+                if (data && data.status === "ok") {
+                    if (data.config) {
+                        if (Array.isArray(data.config.questions) && data.config.questions.length > 0) {
+                            state.questions = data.config.questions;
+                        }
+                        state.timerMinutes = parseInt(data.config.timerMinutes) || 5;
+                        state.maxMarks = parseFloat(data.config.maxMarks) || 25;
+                        state.scaleMarks = Boolean(data.config.scaleMarks);
+                    }
+                    if (Array.isArray(data.submissions)) {
+                        state.submissions = data.submissions;
+                    }
+
+                    pill.className = "badge bg-success";
+                    pill.innerText = "Live ✅";
+                    syncAdminInputs();
+                    renderToppers();
+                    renderAdminTable();
+                    if (showAlert) alert("Sheet-ൽ നിന്നുള്ള വിവരങ്ങൾ അപ്‌ഡേറ്റ് ചെയ്തു!");
+                }
+            } catch (e) {
+                pill.className = "badge bg-danger";
+                pill.innerText = "Offline / Error";
+                renderToppers();
+            }
+        }
+
+        async function postToCloud(payload) {
+            if (!hasValidScriptUrl()) return;
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) {
+                console.error("Post error:", e);
+            }
+        }
+
+        async function handleStudentLogin() {
+            const alertBox = document.getElementById("loginAlert");
+            alertBox.classList.add("hide");
+
+            const id = document.getElementById("studentIdInput").value.trim().toUpperCase();
+            const student = students.find(s => s.id === id);
+
+            if (!student) {
+                alertBox.innerText = "ശരിയായ Student ID നൽകുക!";
+                alertBox.classList.remove("hide");
+                return;
+            }
+
+            const btn = document.getElementById("startQuizBtn");
+            btn.disabled = true;
+            btn.innerText = "ചോദ്യങ്ങൾ ലോഡ് ചെയ്യുന്നു...";
+            await refreshFromCloud(false);
+            btn.disabled = false;
+            btn.innerText = "പരീക്ഷ ആരംഭിക്കുക";
+
+            const alreadySubmitted = state.submissions.some(sub => sub.studentId === student.id);
+            if (alreadySubmitted) {
+                alertBox.innerText = "നിങ്ങൾ ഈ ക്വിസ് ഇതിനകം സബ്മിറ്റ് ചെയ്തിട്ടുണ്ട്!";
+                alertBox.classList.remove("hide");
+                return;
+            }
+
+            activeStudent = student;
+            startQuizSession();
+        }
+
+        function startQuizSession() {
+            document.getElementById("loginSection").classList.add("hide");
+            document.getElementById("quizSection").classList.remove("hide");
+            document.getElementById("adminLoginBtn").classList.add("hide");
+            document.getElementById("logoutBtn").classList.remove("hide");
+
+            document.getElementById("qStudentName").innerText = activeStudent.name;
+            document.getElementById("qStudentMeta").innerText = `${activeStudent.id} | ${activeStudent.category} | ${activeStudent.batch}`;
+
+            quizQuestions = [...state.questions].sort(() => Math.random() - 0.5);
+            answers = {};
+            qIndex = 0;
+            warnings = 1;
+
+            renderQuestion();
+            startTimerSession();
+
+            window.onblur = () => {
+                if (!activeStudent) return;
+                if (warnings > 0) {
+                    warnings--;
+                    document.getElementById("cheatWarning").classList.remove("hide");
+                } else {
+                    finishQuiz(true);
+                }
+            };
+        }
+
+        function renderQuestion() {
+            const q = quizQuestions[qIndex];
+            document.getElementById("qCounter").innerText = `ചോദ്യം ${qIndex + 1} / ${quizQuestions.length}`;
+            document.getElementById("qMarkBadge").innerText = `മാർക്ക്: ${q.marks || 2.5}`;
+            document.getElementById("qText").innerText = `${qIndex + 1}. ${q.text}`;
+
+            const optBox = document.getElementById("qOptions");
+            optBox.innerHTML = "";
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement("button");
+                btn.className = `option-btn ${answers[q.id] === idx ? "selected" : ""}`;
+                btn.innerText = `${String.fromCharCode(65 + idx)}) ${opt}`;
+                btn.onclick = () => {
+                    answers[q.id] = idx;
+                    renderQuestion();
+                };
+                optBox.appendChild(btn);
+            });
+
+            document.getElementById("prevBtn").disabled = qIndex === 0;
+            document.getElementById("nextBtn").innerText = qIndex === quizQuestions.length - 1 ? "സബ്മിറ്റ് ചെയ്യുക" : "അടുത്ത ചോദ്യം";
+        }
+
+        function prevQ() {
+            if (qIndex > 0) {
+                qIndex--;
+                renderQuestion();
+            }
+        }
+
+        function nextQ() {
+            if (qIndex < quizQuestions.length - 1) {
+                qIndex++;
+                renderQuestion();
+            } else {
+                finishQuiz(false);
+            }
+        }
+
+        function startTimerSession() {
+            clearInterval(timerId);
+            secondsLeft = (state.timerMinutes || 5) * 60;
+            const badge = document.getElementById("timerBadge");
+            badge.classList.remove("timer-warning");
+
+            const tick = () => {
+                const m = Math.floor(Math.max(0, secondsLeft) / 60);
+                const s = Math.max(0, secondsLeft) % 60;
+                badge.innerText = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+                if (secondsLeft <= 30) badge.classList.add("timer-warning");
+                if (secondsLeft <= 0) {
+                    clearInterval(timerId);
+                    finishQuiz(true);
+                }
+                secondsLeft--;
+            };
+
+            tick();
+            timerId = setInterval(tick, 1000);
+        }
+
+        async function finishQuiz() {
+            clearInterval(timerId);
+            window.onblur = null;
+
+            let rawScore = 0;
+            let possibleMarks = 0;
+
+            quizQuestions.forEach(q => {
+                const m = parseFloat(q.marks) || 0;
+                possibleMarks += m;
+                if (answers[q.id] === q.answer) rawScore += m;
+            });
+
+            let finalScore = rawScore;
+            if (state.scaleMarks && possibleMarks > 0) {
+                finalScore = (rawScore / possibleMarks) * state.maxMarks;
+            }
+
+            const totalSecs = (state.timerMinutes || 5) * 60;
+            const spent = Math.max(0, totalSecs - Math.max(0, secondsLeft));
+            const timeSpentStr = `${Math.floor(spent / 60)}m ${spent % 60}s`;
+
+            const record = {
+                timestamp: new Date().toLocaleString("en-IN"),
+                studentId: activeStudent.id,
+                name: activeStudent.name,
+                category: activeStudent.category,
+                team: activeStudent.team,
+                batch: activeStudent.batch,
+                score: Number(finalScore.toFixed(1)),
+                timeSpent: timeSpentStr
+            };
+
+            state.submissions.push(record);
+            activeStudent = null;
+
+            document.getElementById("quizSection").classList.add("hide");
+            document.getElementById("doneSection").classList.remove("hide");
+
+            await postToCloud(record);
+            renderToppers();
+        }
+
+        function openAdminModal() {
+            new bootstrap.Modal(document.getElementById("adminModal")).show();
+        }
+
+        async function adminLogin() {
+            const u = document.getElementById("admUser").value.trim();
+            const p = document.getElementById("admPass").value.trim();
+
+            if (u === "admin" && p === "admin123") {
+                bootstrap.Modal.getInstance(document.getElementById("adminModal")).hide();
+                document.getElementById("loginSection").classList.add("hide");
+                document.getElementById("adminSection").classList.remove("hide");
+                document.getElementById("adminLoginBtn").classList.add("hide");
+                document.getElementById("logoutBtn").classList.remove("hide");
+
+                await refreshFromCloud(false);
+                syncAdminInputs();
+                renderAdminTable();
+            } else {
+                document.getElementById("admErr").innerText = "തെറ്റായ വിവരങ്ങൾ!";
+                document.getElementById("admErr").classList.remove("hide");
+            }
+        }
+
+        function syncAdminInputs() {
+            document.getElementById("cfgTimer").value = state.timerMinutes;
+            document.getElementById("cfgMaxMarks").value = state.maxMarks;
+            document.getElementById("cfgScaleMarks").checked = state.scaleMarks;
+
+            const qMarksSum = state.questions.reduce((acc, q) => acc + (parseFloat(q.marks) || 0), 0);
+            document.getElementById("qCountSummary").innerText = `Questions: ${state.questions.length} | Marks Sum: ${qMarksSum}`;
+            document.getElementById("adminSummaryText").innerText = `Submissions: ${state.submissions.length} / ${students.length}`;
+        }
+
+        async function saveSettingsToCloud() {
+            state.timerMinutes = parseInt(document.getElementById("cfgTimer").value) || 5;
+            state.maxMarks = parseFloat(document.getElementById("cfgMaxMarks").value) || 25;
+            state.scaleMarks = document.getElementById("cfgScaleMarks").checked;
+
+            await postToCloud({
+                action: "saveConfig",
+                config: {
+                    questions: state.questions,
+                    timerMinutes: state.timerMinutes,
+                    maxMarks: state.maxMarks,
+                    scaleMarks: state.scaleMarks
+                }
+            });
+
+            syncAdminInputs();
+            alert("Settings Google Sheet-ൽ സേവ് ചെയ്തു!");
+        }
+
+        async function importQuestionsToCloud() {
+            const raw = document.getElementById("bulkInput").value.trim();
+            if (!raw) return alert("ചോദ്യങ്ങൾ പേസ്റ്റ് ചെയ്യുക!");
+
+            const blocks = raw.split(/
+\s*
+/);
+            const parsed = [];
+
+            blocks.forEach((block, i) => {
+                const lines = block.split("
+").map(l => l.trim()).filter(Boolean);
+                if (lines.length >= 5) {
+                    let qText = lines[0].replace(/^\d+[\.\)]\s*/, "");
+                    let marks = 2.5;
+
+                    const mMatch = qText.match(/[\(\[]\s*(\d+(?:\.\d+)?)\s*(?:marks?)?\s*[\)\]]\s*$/i);
+                    if (mMatch) {
+                        marks = parseFloat(mMatch[1]);
+                        qText = qText.replace(mMatch[0], "").trim();
+                    }
+
+                    const opts = lines.slice(1, 5).map(o => o.replace(/^[A-D][\.\)]\s*/, ""));
+                    const ansLine = lines.find(l => l.toLowerCase().startsWith("ans:")) || "Ans: A";
+                    const ansChar = (ansLine.split(":")[1] || "A").trim().charAt(0).toUpperCase();
+                    const ansIdx = Math.max(0, Math.min(3, ansChar.charCodeAt(0) - 65));
+
+                    parsed.push({
+                        id: i + 1,
+                        text: qText,
+                        options: opts,
+                        answer: ansIdx,
+                        marks: marks
+                    });
+                }
+            });
+
+            if (!parsed.length) return alert("ഫോർമാറ്റ് ശരിയല്ല!");
+
+            state.questions = parsed;
+            document.getElementById("bulkInput").value = "";
+            syncAdminInputs();
+
+            await postToCloud({
+                action: "saveConfig",
+                config: {
+                    questions: state.questions,
+                    timerMinutes: state.timerMinutes,
+                    maxMarks: state.maxMarks,
+                    scaleMarks: state.scaleMarks
+                }
+            });
+
+            alert(`${parsed.length} ചോദ്യങ്ങൾ Google Sheet-ലേക്ക് അപ്‌ലോഡ് ചെയ്തു! ഇനി എല്ലായിടത്തും ലഭ്യമാകും.`);
+        }
+
+        function renderAdminTable() {
+            const filter = document.getElementById("catFilter").value;
+            const tbody = document.getElementById("adminTableBody");
+            tbody.innerHTML = "";
+
+            state.submissions
+                .filter(s => filter === "ALL" || s.category === filter)
+                .forEach(sub => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td><strong>${sub.studentId}</strong></td>
+                        <td>${sub.name}</td>
+                        <td>${sub.category}</td>
+                        <td>${sub.batch}</td>
+                        <td><strong class="text-success">${sub.score}</strong></td>
+                        <td>${sub.timeSpent}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-warning" onclick="reallowStudent('${sub.studentId}')">Re-allow</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            syncAdminInputs();
+        }
+
+        async function reallowStudent(studentId) {
+            if (!confirm(`${studentId} വീണ്ടും എഴുതാൻ അനുവദിക്കണോ?`)) return;
+            state.submissions = state.submissions.filter(s => s.studentId !== studentId);
+            renderAdminTable();
+            renderToppers();
+            await postToCloud({ action: "deleteStudent", studentId });
+        }
+
+        async function clearAllSubmissions() {
+            if (!confirm("എല്ലാ സബ്മിഷനുകളും ഡിലീറ്റ് ചെയ്യണോ?")) return;
+            state.submissions = [];
+            renderAdminTable();
+            renderToppers();
+            await postToCloud({ action: "clearAll" });
+        }
+
+        function renderToppers() {
+            const box = document.getElementById("toppersList");
+            box.innerHTML = "";
+            ["Senior", "Junior", "Sub Junior"].forEach(cat => {
+                const top = state.submissions
+                    .filter(s => s.category === cat)
+                    .sort((a, b) => parseFloat(b.score) - parseFloat(a.score))[0];
+
+                const div = document.createElement("div");
+                div.className = "col-12";
+                div.innerHTML = `
+                    <div class="p-2 card-custom topper-card d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="fw-bold text-secondary">${cat}</small>
+                            <h6 class="mb-0 fw-bold">${top ? top.name : "വിവരങ്ങൾ ലഭ്യമല്ല"}</h6>
+                        </div>
+                        <span class="badge bg-warning text-dark">${top ? top.score + " Pts" : "0 Pts"}</span>
+                    </div>
+                `;
+                box.appendChild(div);
+            });
+        }
+
+        function logout() {
+            clearInterval(timerId);
+            window.onblur = null;
+            activeStudent = null;
+            location.reload();
+        }
+    </script>
+</body>
+</html>
